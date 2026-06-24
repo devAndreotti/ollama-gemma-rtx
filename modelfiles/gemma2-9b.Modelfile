@@ -1,0 +1,4 @@
+FROM gemma2:9b-instruct-q3_K_S
+
+PARAMETER num_gpu 33
+PARAMETER num_ctx 8192

@@ -1,0 +1,8 @@
+# Ollama model blobs — never commit these (GBs of binary data)
+*.gguf
+*.bin
+blobs/
+
+# Windows
+Thumbs.db
+desktop.ini
