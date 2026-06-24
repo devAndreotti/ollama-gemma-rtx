@@ -88,6 +88,45 @@ With the 9B, **more GPU layers ≠ faster**. At ≥ 36 layers CUDA spills into s
 
 ---
 
+## Windows power plan (measured: +31% on CPU-offloaded models)
+
+Laptops often ship on the **Power saver** plan, which throttles the CPU. This barely affects fully-GPU-resident models (the GPU boosts on its own under load), but it heavily penalizes any model that offloads layers to the CPU.
+
+Measured on this machine, switching from **Power saver** to **Ultimate Performance**:
+
+| Model | Power saver | Ultimate Performance | Δ |
+|---|---|---|---|
+| Gemma 4 E4B (100% GPU) | 29 tok/s | 28 tok/s | ~none |
+| Gemma 2 9B (30% CPU) | 7.7 tok/s | **10.1 tok/s** | **+31%** |
+
+Enable it (the plan may need to be created first on some installs):
+```bat
+powercfg /setactive 98c56a02-4c00-471e-9432-7211b6a01f73   :: Ultimate Performance
+:: if that GUID doesn't exist:  powercfg -duplicatescheme e9a42b02-d5df-448d-aa00-03f14749eb61
+```
+
+**Battery note:** Ultimate Performance drains the battery if left unmanaged. Rather than auto-swapping plans (fragile on Windows — WMIC is removed and power-source event triggers are unreliable), tune the plan's **DC (battery) profile** to be conservative while keeping AC at full performance. Windows applies these automatically based on power source:
+```bat
+:: Battery: let the CPU idle and trim turbo; AC: full blast
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 100
+powercfg /setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 5
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX 100
+powercfg /setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX 90
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PCIEXPRESS  ASPM 0
+powercfg /setdcvalueindex SCHEME_CURRENT SUB_PCIEXPRESS  ASPM 2
+powercfg /setactive SCHEME_CURRENT
+```
+
+---
+
+## What we tested that didn't help
+
+- **`num_batch 1024`** (vs default 512): no prefill gain on these small models — run-to-run variance (1615–1836 tok/s) exceeded any effect, and it cost +0.3 GB VRAM. The "+60% throughput" figures floating around are for large models on big GPUs, not a 2B on 4 GB.
+- **KV cache quantization (q8_0/q4_0)** and **Flash Attention**: no benefit on Gemma 4 — sliding-window attention already keeps the KV cache tiny (~1.7 GB at 128K). Slightly slower, saved ~50–150 MB.
+- **TurboQuant KV compression**: the upstream llama.cpp PR was rejected; it's CPU-only and forks are experimental. Not viable.
+
+---
+
 ## Gotchas
 
 **`nvidia-smi` is unreliable on Optimus laptops.**
