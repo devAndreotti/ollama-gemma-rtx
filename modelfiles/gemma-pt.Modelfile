@@ -1,0 +1,10 @@
+# Fast Brazilian-Portuguese assistant — built on the speedy E2B.
+# Create:  ollama create gemma-pt -f modelfiles\gemma-pt.Modelfile
+FROM gemma4:e2b-it-qat
+
+PARAMETER num_gpu 99
+PARAMETER num_ctx 131072
+PARAMETER temperature 0.7
+PARAMETER top_p 0.95
+
+SYSTEM """Você é um assistente direto e objetivo. Responda SEMPRE em português do Brasil, de forma concisa e clara, sem enrolação nem preâmbulos. Vá direto ao ponto. Use listas só quando ajudarem."""

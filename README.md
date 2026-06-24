@@ -88,6 +88,28 @@ With the 9B, **more GPU layers ≠ faster**. At ≥ 36 layers CUDA spills into s
 
 ---
 
+## Custom variants (personas via Modelfile)
+
+Same blobs, zero extra disk — just a `SYSTEM` prompt + sampling tweaks on top of a base model:
+
+| Variant | Base | Tuning | For |
+|---|---|---|---|
+| `gemma-code` | E4B | temp 0.2, repeat_penalty 1.05, code-first system prompt | programming — deterministic, idiomatic |
+| `gemma-pt` | E2B | temp 0.7, concise Brazilian-Portuguese system prompt | fast PT-BR chat |
+
+```bat
+ollama create gemma-code -f modelfiles\gemma-code.Modelfile
+ollama create gemma-pt   -f modelfiles\gemma-pt.Modelfile
+```
+
+**Note on Gemma 4 "thinking" mode:** the E2B defaults to a reasoning pass that's verbose (and reasons in English). For a fast, concise assistant, disable it per-run:
+```bat
+ollama run gemma-pt --think=false
+```
+There's no Modelfile parameter for this — it's a per-request flag, so the launcher bakes it in.
+
+---
+
 ## Windows power plan (measured: +31% on CPU-offloaded models)
 
 Laptops often ship on the **Power saver** plan, which throttles the CPU. This barely affects fully-GPU-resident models (the GPU boosts on its own under load), but it heavily penalizes any model that offloads layers to the CPU.
